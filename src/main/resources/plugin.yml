@@ -1,0 +1,18 @@
+name: ZTimer
+main: com.zenologia.ztimer.ZTimerPlugin
+version: 1.0
+api-version: '1.21'
+author: Zenologia
+depend:
+  - PlaceholderAPI
+commands:
+  ztimer:
+    description: Base command for ZTimer.
+    usage: "/ztimer <start|stop|reset|cancel|reload> ..."
+permissions:
+  ztimer.admin:
+    description: Allows administrative control of ZTimer.
+    default: op
+  ztimer.cancel.self:
+    description: Allows a player to cancel their own timer.
+    default: true

@@ -1,0 +1,58 @@
+storage:
+  type: sqlite
+  sqlite:
+    file: "ztimer.db"
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "ztimer"
+    user: "ztimer"
+    password: "password"
+    useSSL: false
+
+leaderboards:
+  global_top_n_default: 5
+  per_timer:
+    maze1: 3
+
+mazes:
+  maze1:
+    exit_location:
+      world: "world"
+      x: 100.5
+      y: 64.0
+      z: 200.5
+      yaw: 0.0
+      pitch: 0.0
+
+fallback_exit_location:
+  enabled: false
+  world: "world"
+  x: 0.5
+  y: 64.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+
+formatting:
+  time_default: "-"
+  time_pattern: "mm:ss"
+
+messages:
+  prefix: "&7[&bZTimer&7] "
+  errors:
+    no_permission: "You do not have permission."
+    timer_not_running: "Timer &e%timer%&7 is not running for &b%player%&7."
+    invalid_timer_id: "Timer ID &e%timer%&7 is invalid."
+    invalid_player_selector: "No valid players found for selector &e%selector%&7."
+  info:
+    start: "Started timer &e%timer%&7 for &b%player%&7."
+    stop: "Stopped timer &e%timer%&7 for &b%player%&7. Time: &a%time%&7."
+    reset: "Reset timer &e%timer%&7 for &b%player%&7."
+    cancel: "Canceled timer &e%timer%&7 for &b%player%&7."
+    reload: "ZTimer configuration reloaded."
+
+debug:
+  enabled: false
+  log_start_stop: true
+  log_db_errors: true
