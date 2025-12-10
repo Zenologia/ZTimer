@@ -1,3 +1,4 @@
+#If you're changing storage types, you must restart the whole server.  Reloading the plugin will cause things to break.
 storage:
   type: sqlite
   sqlite:
