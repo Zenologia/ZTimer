@@ -1,18 +1,19 @@
 package com.zenologia.ztimer.config;
 
-import com.zenologia.ztimer.ZTimerPlugin;
-import com.zenologia.ztimer.util.TimerIdNormalizer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import com.zenologia.ztimer.ZTimerPlugin;
+import com.zenologia.ztimer.util.TimerIdNormalizer;
 
 public class ConfigManager {
 
@@ -35,6 +36,10 @@ public class ConfigManager {
     private String msgReset;
     private String msgCancel;
     private String msgReload;
+
+    // New global reset messages (moved out of ZTimerCommand)
+    private String msgResetConfirmGlobal;
+    private String msgResetSuccessGlobal;
 
     private String timeDefault;
     private String timePattern;
@@ -109,6 +114,13 @@ public class ConfigManager {
         this.msgReset = color(config.getString("messages.info.reset", "Reset timer &e%timer%&7 for &b%player%&7."));
         this.msgCancel = color(config.getString("messages.info.cancel", "Canceled timer &e%timer%&7 for &b%player%&7."));
         this.msgReload = color(config.getString("messages.info.reload", "ZTimer configuration reloaded."));
+
+        // Load newly moved global reset messages
+        // Defaults include color codes around %timer% and %selector% so replacement of %selector% can be plain text (e.g. "all players")
+        this.msgResetConfirmGlobal = color(config.getString("messages.info.reset_confirm_global",
+                "This will reset all stored times for timer &e%timer%&7 for &b%selector%&7. Type &c/ztimer reset %timer% confirm&7 to confirm."));
+        this.msgResetSuccessGlobal = color(config.getString("messages.info.reset_success_global",
+                "Reset timer &e%timer%&7 for &b%selector%&7."));
 
         this.timeDefault = config.getString("formatting.time_default", "-");
         this.timePattern = config.getString("formatting.time_pattern", "mm:ss");
@@ -208,6 +220,15 @@ public class ConfigManager {
 
     public String getMsgReload() {
         return msgReload;
+    }
+
+    // Getters for the moved global reset messages
+    public String getMsgResetConfirmGlobal() {
+        return msgResetConfirmGlobal;
+    }
+
+    public String getMsgResetSuccessGlobal() {
+        return msgResetSuccessGlobal;
     }
 
     public String getTimeDefault() {
