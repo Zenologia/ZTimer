@@ -1,17 +1,21 @@
 package com.zenologia.ztimer.command;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+
 import com.zenologia.ztimer.ZTimerPlugin;
 import com.zenologia.ztimer.config.ConfigManager;
 import com.zenologia.ztimer.timer.TimerManager;
 import com.zenologia.ztimer.util.TimerIdNormalizer;
-import org.bukkit.Bukkit;
-import org.bukkit.command.*;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class ZTimerCommand implements CommandExecutor, TabCompleter {
 
@@ -151,9 +155,9 @@ private void handleReset(CommandSender sender, String[] args) {
         // Global reset confirmation: /ztimer reset <timerId>
         if (args.length == 2) {
             sender.sendMessage(configManager.getPrefix() +
-                    "This will reset all stored times for timer &e" + normalized +
-                    "&7 for &ball players&7. Type &c/ztimer reset " + normalized +
-                    " confirm&7 to confirm.");
+                    configManager.getMsgResetConfirmGlobal()
+                            .replace("%timer%", normalized)
+                            .replace("%selector%", "all players"));
             return;
         }
 
@@ -172,7 +176,9 @@ private void handleReset(CommandSender sender, String[] args) {
                 }
             });
             sender.sendMessage(configManager.getPrefix() +
-                    "Reset timer &e" + normalized + "&7 for &ball players&7.");
+                    configManager.getMsgResetSuccessGlobal()
+                            .replace("%timer%", normalized)
+                            .replace("%selector%", "all players"));
             return;
         }
 
