@@ -1,4 +1,4 @@
-#If you're changing storage types, you must restart the whole server.  Reloading the plugin will cause things to break.
+# If you're changing storage types, you must restart the whole server.  Reloading the plugin will cause things to break.
 storage:
   type: sqlite
   sqlite:
@@ -46,12 +46,15 @@ messages:
     timer_not_running: "Timer &e%timer%&7 is not running for &b%player%&7."
     invalid_timer_id: "Timer ID &e%timer%&7 is invalid."
     invalid_player_selector: "No valid players found for selector &e%selector%&7."
+    
   info:
     start: "Started timer &e%timer%&7 for &b%player%&7."
     stop: "Stopped timer &e%timer%&7 for &b%player%&7. Time: &a%time%&7."
     reset: "Reset timer &e%timer%&7 for &b%player%&7."
     cancel: "Canceled timer &e%timer%&7 for &b%player%&7."
     reload: "ZTimer configuration reloaded."
+    reset_confirm: "&7This will reset all stored times for timer &e%timer%&7 for &e%selector%&7. Type &c/ztimer reset %timer% confirm&7 to confirm."
+    reset_success: "&7Reset timer &e%timer%&7 for &e%selector%&7."
 
 debug:
   enabled: false
