@@ -1,0 +1,1 @@
+Figure out how to teleport user out of maze if they quit and then the server retsarts
