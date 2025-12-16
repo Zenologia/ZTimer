@@ -1,18 +1,22 @@
 package com.zenologia.ztimer.timer;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
 import com.zenologia.ztimer.ZTimerPlugin;
 import com.zenologia.ztimer.config.ConfigManager;
 import com.zenologia.ztimer.db.LeaderboardEntry;
 import com.zenologia.ztimer.db.Storage;
 import com.zenologia.ztimer.util.TimeFormatter;
 import com.zenologia.ztimer.util.TimerIdNormalizer;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TimerManager {
 
@@ -128,8 +132,7 @@ public class TimerManager {
         return true;
     }
 
-
-public boolean cancelTimer(Player player, String rawTimerId) {
+    public boolean cancelTimer(Player player, String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
         if (timerId == null) {
             return false;
@@ -151,11 +154,15 @@ public boolean cancelTimer(Player player, String rawTimerId) {
         return true;
     }
 
-public void handleLogout(Player player) {
+    public void handleLogout(Player player) {
         ActiveTimer active = activeTimers.remove(player.getUniqueId());
         if (active != null) {
-            // Cancel run, do not record best, store pending teleport
-            pendingTeleportManager.setPendingTeleport(player.getUniqueId(), active.getTimerId());
+            // Determine relog commands from config (optional)
+            List<String> relogCommands = configManager.getRelogCommandsForTimer(active.getTimerId());
+
+            // Persist pending teleport (file-backed)
+            pendingTeleportManager.setPendingTeleport(player.getUniqueId(), active.getTimerId(), relogCommands);
+
             if (configManager.isDebugEnabled() && configManager.isDebugLogStartStop()) {
                 plugin.getLogger().info("Player " + player.getName() +
                         " logged out during timer '" + active.getTimerId() + "', pending teleport set.");
@@ -176,9 +183,13 @@ public void handleLogout(Player player) {
             }
         });
 
-        String timerId = pendingTeleportManager.consumePendingTeleport(player.getUniqueId());
-        if (timerId != null) {
-            teleportToExit(player, timerId);
+        PendingTeleport pt = pendingTeleportManager.consumePendingTeleport(player.getUniqueId());
+        if (pt != null) {
+            // teleport immediately on main thread
+            Bukkit.getScheduler().runTask(plugin, () -> teleportToExit(player, pt.getTimerId()));
+
+            // Run relog commands 1 tick later so player entity is fully initialized for commands targeting the player
+            Bukkit.getScheduler().runTaskLater(plugin, () -> runRelogCommands(player, pt.getCommands()), 1L);
         }
     }
 
@@ -210,6 +221,23 @@ public void handleLogout(Player player) {
         }
     }
 
+    private void runRelogCommands(Player player, List<String> commands) {
+        if (commands == null || commands.isEmpty()) return;
+        for (String rawCmd : commands) {
+            if (rawCmd == null || rawCmd.trim().isEmpty()) continue;
+            String cmd = rawCmd.replace("%player%", player.getName())
+                    .replace("%player_uuid%", player.getUniqueId().toString());
+            try {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            } catch (Exception ex) {
+                if (configManager.isDebugEnabled()) {
+                    plugin.getLogger().severe("Error running relog command for " + player.getName() + ": " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
     public Long getCurrentElapsedMillis(Player player, String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
         if (timerId == null) {
@@ -230,7 +258,6 @@ public void handleLogout(Player player) {
         ActiveTimer active = activeTimers.get(player.getUniqueId());
         return active != null && active.getTimerId().equals(timerId);
     }
-
 
     public Long getBestTimeMillis(Player player, String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
@@ -290,7 +317,6 @@ public void handleLogout(Player player) {
         }
     }
 
-
     public void clearCachesForTimer(String timerId) {
         if (timerId == null) {
             return;
@@ -300,7 +326,7 @@ public void handleLogout(Player player) {
         leaderboardCache.remove(timerId);
     }
 
-        public void refreshLeaderboardCache(String rawTimerId) {
+    public void refreshLeaderboardCache(String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
         if (timerId == null) {
             return;
