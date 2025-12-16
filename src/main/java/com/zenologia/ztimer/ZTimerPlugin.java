@@ -1,5 +1,9 @@
 package com.zenologia.ztimer;
 
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import com.zenologia.ztimer.command.ZTimerCommand;
 import com.zenologia.ztimer.config.ConfigManager;
 import com.zenologia.ztimer.db.Storage;
@@ -8,9 +12,6 @@ import com.zenologia.ztimer.listener.PlayerQuitListener;
 import com.zenologia.ztimer.placeholder.ZTimerExpansion;
 import com.zenologia.ztimer.timer.PendingTeleportManager;
 import com.zenologia.ztimer.timer.TimerManager;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class ZTimerPlugin extends JavaPlugin {
 
@@ -49,7 +50,7 @@ public class ZTimerPlugin extends JavaPlugin {
             return;
         }
 
-        this.pendingTeleportManager = new PendingTeleportManager();
+        this.pendingTeleportManager = new PendingTeleportManager(this);
         this.timerManager = new TimerManager(this, storage, configManager, pendingTeleportManager);
 
         // Commands
