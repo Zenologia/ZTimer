@@ -3,6 +3,7 @@ package com.zenologia.ztimer.config;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -252,7 +253,6 @@ public class ConfigManager {
     }
 
 
-
     public Set<String> getKnownTimerIds() {
         Set<String> ids = new HashSet<>();
         ids.addAll(perTimerTopN.keySet());
@@ -261,7 +261,42 @@ public class ConfigManager {
     }
 
 
-        public FileConfiguration getRawConfig() {
+    public FileConfiguration getRawConfig() {
         return config;
+    }
+
+    /**
+     * Returns relog-commands for a timer.
+     * Checks both mazes.<id>.relog-commands and timers.<id>.relog-commands for compatibility.
+     */
+    public List<String> getRelogCommandsForTimer(String timerId) {
+        if (timerId == null) return Collections.emptyList();
+        String normalized = TimerIdNormalizer.normalize(timerId);
+
+        // Check mazes.<id>.relog-commands first (existing repo structure)
+        String mazesPath = "mazes." + timerId + ".relog-commands";
+        if (config.contains(mazesPath)) {
+            return config.getStringList(mazesPath);
+        }
+        if (normalized != null) {
+            String mazesNorm = "mazes." + normalized + ".relog-commands";
+            if (config.contains(mazesNorm)) {
+                return config.getStringList(mazesNorm);
+            }
+        }
+
+        // Fallback to timers.<id>.relog-commands
+        String timersPath = "timers." + timerId + ".relog-commands";
+        if (config.contains(timersPath)) {
+            return config.getStringList(timersPath);
+        }
+        if (normalized != null) {
+            String timersNorm = "timers." + normalized + ".relog-commands";
+            if (config.contains(timersNorm)) {
+                return config.getStringList(timersNorm);
+            }
+        }
+
+        return Collections.emptyList();
     }
 }
