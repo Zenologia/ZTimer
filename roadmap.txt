@@ -1,2 +1,0 @@
-Figure out how to teleport user out of maze if they quit and then the server retsarts
-Figure out how to run external commands if a player quits out mid maze 
