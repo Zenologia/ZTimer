@@ -26,6 +26,9 @@ mazes:
       yaw: 0.0
       pitch: 0.0
 
+# The following are commands that will be executed when a player relogs while having an active timer.
+# You can use %player% and %player_uuid% placeholders.
+# The commands are executed as the console.
 timers:
   maze1:
     relog-commands:
