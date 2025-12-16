@@ -6,7 +6,7 @@
 
     <groupId>com.zenologia</groupId>
     <artifactId>ztimer</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <name>ZTimer</name>
     <description>Per-player timing plugin with PlaceholderAPI integration.</description>
 
