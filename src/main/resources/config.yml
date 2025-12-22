@@ -26,13 +26,15 @@ mazes:
       yaw: 0.0
       pitch: 0.0
 
-# The following are commands that will be executed when a player relogs while having an active timer.
+# The following are commands that will be executed when a player logs out while having an active timer, and also commands to be executed when they log back in..
 # You can use %player% and %player_uuid% placeholders.
 # The commands are executed as the console.
 timers:
   maze1:
     relog-commands:
       - "say RELOG %player% %player_uuid%"
+    logout-commands:
+      - "say LOGOUT %player% %player_uuid%"
 
 fallback_exit_location:
   enabled: false
