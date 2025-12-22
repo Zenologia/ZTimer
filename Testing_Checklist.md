@@ -99,237 +99,95 @@ This document provides a comprehensive testing checklist for the ZTimer plugin. 
 - [ ] Decrement button subtracts time correctly
 - [ ] Fast-forward feature works as expected
 - [ ] Rewind feature works as expected
-- [ ] Boundaries are respected (no negative times)
-
-### Notifications & Alerts
-- [ ] Timer completion triggers notification
-- [ ] Notification displays correct message
-- [ ] Sound alert plays when enabled
-- [ ] Visual alert appears when enabled
-- [ ] Notifications can be dismissed
-- [ ] Multiple notifications queue correctly
 
 ---
 
-## 4. Performance Testing
+## 4. Logout-Commands (NEW FEATURE) — Functional & Integration Tests
 
-### Load Testing
-- [ ] Plugin handles 100+ concurrent timers
-- [ ] Plugin remains responsive with high timer count
-- [ ] Memory usage stays within acceptable limits
-- [ ] CPU usage remains under 30% during idle
-- [ ] Database queries complete within 500ms
-- [ ] UI rendering stays at 60 FPS
+These tests cover the new "logout-commands" feature which runs configured commands immediately when a player logs out while an active timer is running. They also check interaction with the existing relog-commands and pending teleport persistence.
 
-### Stress Testing
-- [ ] Plugin survives rapid start/stop cycles
-- [ ] High-frequency timer updates don't cause crashes
-- [ ] Large data imports complete successfully
-- [ ] Memory is properly released after operations
-- [ ] No stack overflow with recursive operations
-- [ ] Handles network timeouts gracefully
+### Configuration & Discovery
+- [ ] `mazes.<id>.logout-commands` is recognized and loaded from config
+- [ ] `timers.<id>.logout-commands` (alternative location) is recognized and loaded
+- [ ] When no logout-commands are configured, no commands are executed on logout
 
-### Response Time Testing
-- [ ] Timer response to input within 100ms
-- [ ] UI updates within 50ms
-- [ ] Database operations within 500ms
-- [ ] API calls return within 5 seconds
-- [ ] Error messages display immediately
-- [ ] Notifications appear within 1 second of trigger
+### Immediate Execution on Logout
+- [ ] Commands listed under logout-commands are executed immediately when PlayerQuitEvent fires with an active timer
+- [ ] Commands are dispatched as console commands (Bukkit console sender)
+- [ ] Placeholders `%player%` and `%player_uuid%` are correctly replaced in executed commands
+- [ ] Commands run even if relog-commands are also configured (both behaviors should work independently)
 
----
+### Interaction with Pending Teleports & Relog Commands
+- [ ] Pending teleport entry is still written to pending_teleports.yml on logout (unchanged behavior)
+- [ ] relog-commands remain persisted and are executed on player join as before
+- [ ] logout-commands do not replace or remove relog-commands unless explicitly configured by the admin
 
-## 5. Security Testing
+### Threading & Performance Safety
+- [ ] Executing logout-commands on PlayerQuitEvent does not block the server tick for more than acceptable threshold (measure on a test server)
+- [ ] If logout-commands may be long-running, ensure server tick times are acceptable (recommendation: avoid heavy blocking commands)
+- [ ] Verify that running logout-commands does not cause concurrency issues with other parts of the plugin (e.g., storage writes)
 
-### Input Validation
-- [ ] SQL injection attempts are blocked
-- [ ] XSS attacks are prevented
-- [ ] Command injection is prevented
-- [ ] Malicious file uploads are rejected
-- [ ] Input length limits are enforced
-- [ ] Special characters are escaped properly
+### Error Handling & Logging
+- [ ] If a logout command throws an exception, it is caught and logged (when debug enabled) without preventing pending teleport persistence
+- [ ] Debug logging reflects logout-commands execution when debug is enabled
+- [ ] Malformed commands are logged but do not crash the plugin
 
-### Authentication & Authorization
-- [ ] Unauthorized access is denied
-- [ ] User roles are enforced
-- [ ] Session tokens are validated
-- [ ] Password requirements are enforced
-- [ ] Logout clears session data
-- [ ] Session timeout works correctly
+### Edge Cases
+- [ ] Player disconnects while logout-commands are executing — verify no uncaught exceptions and pending teleport saved
+- [ ] Multiple players logging out simultaneously with logout-commands configured — verify commands run for each player and no cross-contamination of placeholders
+- [ ] Commands with no placeholders behave correctly
+- [ ] Empty/null command entries in config are ignored safely
+- [ ] If plugin is disabled before PlayerQuitEvent completes, ensure safe handling (no NPEs)
 
-### Data Protection
-- [ ] Sensitive data is encrypted in transit
-- [ ] Sensitive data is encrypted at rest
-- [ ] Data access logs are maintained
-- [ ] Unused data is properly deleted
-- [ ] Backup data is secure
-- [ ] API keys are not exposed in logs
+### Cross-Platform / Storage Interactions
+- [ ] Logout-commands behavior is identical on both sqlite and mysql configurations
+- [ ] Pending teleports file (pending_teleports.yml) continues to be written and read correctly after logout-commands run
+
+### Security & Permissions
+- [ ] Confirm commands run as console (so server-level permissions apply) and expected effects occur
+- [ ] Validate that no privileged operations are inadvertently exposed (admins should configure commands intentionally)
 
 ---
 
-## 6. Compatibility Testing
+## 5. Suggested Automated Tests & Mocks
 
-### Browser Compatibility
-- [ ] Works in Chrome (latest 2 versions)
-- [ ] Works in Firefox (latest 2 versions)
-- [ ] Works in Safari (latest 2 versions)
-- [ ] Works in Edge (latest 2 versions)
-- [ ] Mobile browser compatibility tested
-- [ ] Responsive design works on all screen sizes
+Automated testing is recommended using MockBukkit or a dedicated integration test environment:
 
-### Operating System Compatibility
-- [ ] Works on Windows 10/11
-- [ ] Works on macOS 12+
-- [ ] Works on Linux (Ubuntu, Fedora, Debian)
-- [ ] iOS compatibility tested
-- [ ] Android compatibility tested
+### Unit / Mock Tests
+- [ ] Unit test TimerManager.handleLogout(Player) using a mock Player that verifies:
+  - runRelog/dispatch method is invoked with expected command strings
+  - pendingTeleportManager.setPendingTeleport is called with correct timer id and relog-commands
+- [ ] Add a test for placeholder substitution method (or runRelogCommands helper), asserting correct replacement of `%player%` and `%player_uuid%`
+- [ ] Mock the Bukkit scheduler to ensure no scheduling regressions (e.g., relog runs with runTaskLater)
 
-### Version Compatibility
-- [ ] Works with Java 11+
-- [ ] Works with Python 3.8+
-- [ ] Works with Node.js 14+
-- [ ] Compatible with required dependencies
-- [ ] Backward compatible with previous versions
-- [ ] Forward compatible with upcoming versions
+### Integration Tests
+- [ ] Integration test on a test server:
+  - Configure logout-commands and relog-commands for a timer
+  - Start a timer, disconnect the player, assert logout command side-effects (e.g., entry in a test log or plugin state)
+  - Reconnect player and assert relog commands run and pending teleport consumed
+- [ ] Performance test:
+  - Create a logout-command that simulates some work (lightweight) and measure tick durations during high concurrent logouts
 
 ---
 
-## 7. User Experience Testing
+## 6. Notes & Test Data
 
-### Usability
-- [ ] UI is intuitive and easy to understand
-- [ ] Common tasks complete in under 3 clicks
-- [ ] Help documentation is available
-- [ ] Error messages are clear and actionable
-- [ ] Undo/Redo functionality works
-- [ ] Keyboard shortcuts are documented and work
+- Example config for tests:
+  - `mazes.testMaze.logout-commands: ["say LOGOUT %player% %player_uuid%"]`
+  - `mazes.testMaze.relog-commands: ["say RELOG %player% %player_uuid%"]`
 
-### Accessibility
-- [ ] Screen reader compatibility tested
-- [ ] Keyboard-only navigation works
-- [ ] Color contrast meets WCAG standards
-- [ ] Font sizes are readable
-- [ ] Alt text provided for images
-- [ ] Focus indicators are visible
-
-### Localization
-- [ ] UI translates to multiple languages
-- [ ] Date/time formats respect locale
-- [ ] Number formatting is locale-aware
-- [ ] Currency formatting works correctly
-- [ ] Right-to-left languages are supported
-- [ ] Character encoding is UTF-8
+- Test players: use deterministic names and UUIDs for assertion stubs.
 
 ---
 
-## 8. Edge Case Testing
-
-### Boundary Conditions
-- [ ] Timer with 0 seconds duration
-- [ ] Timer with maximum time value (999:59:59)
-- [ ] Negative time handling
-- [ ] Leap second handling
-- [ ] Daylight saving time transitions
-- [ ] Timezone change during running timer
-
-### Error Scenarios
-- [ ] Network disconnection during operation
-- [ ] Database connection loss
-- [ ] Out of memory condition
-- [ ] File system full scenario
-- [ ] Corrupted configuration file
-- [ ] Missing required dependencies
-
-### Concurrent Operations
-- [ ] Multiple timers starting simultaneously
-- [ ] User input during timer update
-- [ ] Database write while reading
-- [ ] UI update during background operation
-- [ ] Plugin reload during active timer
-- [ ] Notification during UI interaction
+## 7. Misc / Regression Checklist
+- [ ] Verify PlayerQuitListener still calls TimerManager.handleLogout correctly
+- [ ] Ensure no regression in cancel/reset/start/stop flows after adding logout-commands
+- [ ] Update README / CHANGELOG to note the new logout-commands option
 
 ---
 
-## 9. Regression Testing
-
-### Previous Issues
-- [ ] All fixed bugs remain fixed
-- [ ] Previously failing tests now pass
-- [ ] No new errors introduced
-- [ ] Performance hasn't degraded
-- [ ] Feature compatibility maintained
-- [ ] Documentation is up-to-date
-
-### Version Testing
-- [ ] Features from v1.0 still work
-- [ ] Features from v1.1 still work
-- [ ] Features from v1.2 still work
-- [ ] Upgrades from previous versions work
-- [ ] Downgrades don't cause issues
-- [ ] Database migrations work correctly
-
----
-
-## 10. Documentation & Compliance
-
-### Documentation
-- [ ] README file is complete and accurate
-- [ ] API documentation is comprehensive
-- [ ] Code examples are provided
-- [ ] Troubleshooting guide exists
-- [ ] Installation instructions are clear
-- [ ] Configuration guide is thorough
-
-### Code Quality
-- [ ] Code follows style guidelines
-- [ ] Test coverage is above 80%
-- [ ] No known security vulnerabilities
-- [ ] Dependencies are up-to-date
-- [ ] Code comments are clear
-- [ ] Changelog is maintained
-
-### Compliance
-- [ ] GDPR compliance verified
-- [ ] CCPA compliance verified
-- [ ] License headers present in files
-- [ ] Open source dependencies licensed correctly
-- [ ] Accessibility standards met
-- [ ] Performance benchmarks documented
-
----
-
-## Test Execution Summary
-
-| Test Category | Status | Pass | Fail | Notes |
-|---|---|---|---|---|
-| Unit Testing | ☐ | ☐ | ☐ | |
-| Integration Testing | ☐ | ☐ | ☐ | |
-| Functional Testing | ☐ | ☐ | ☐ | |
-| Performance Testing | ☐ | ☐ | ☐ | |
-| Security Testing | ☐ | ☐ | ☐ | |
-| Compatibility Testing | ☐ | ☐ | ☐ | |
-| User Experience Testing | ☐ | ☐ | ☐ | |
-| Edge Case Testing | ☐ | ☐ | ☐ | |
-| Regression Testing | ☐ | ☐ | ☐ | |
-
----
-
-## Sign-Off
-
-- **Tested By:** _________________________ **Date:** _________
-- **Reviewed By:** _________________________ **Date:** _________
-- **Approved By:** _________________________ **Date:** _________
-
----
-
-## Notes & Issues Found
-
-```
-[Add testing notes, bugs found, and issues here]
-```
-
----
-
-**Version:** 1.0  
-**Last Updated:** 2025-12-16  
-**Next Review Date:** [To be determined based on release cycle]
+## 8. Manual Acceptance Criteria
+- [ ] Admin can configure logout-commands and observe immediate effects on logout
+- [ ] Admin can still configure relog-commands and observe delayed effects on join
+- [ ] No crash, no data loss, and plugin logs helpful debug information when enabled
