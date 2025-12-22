@@ -299,4 +299,39 @@ public class ConfigManager {
 
         return Collections.emptyList();
     }
+
+    /**
+     * Returns logout-commands for a timer.
+     * Checks both mazes.<id>.logout-commands and timers.<id>.logout-commands for compatibility.
+     */
+    public List<String> getLogoutCommandsForTimer(String timerId) {
+        if (timerId == null) return Collections.emptyList();
+        String normalized = TimerIdNormalizer.normalize(timerId);
+
+        // Check mazes.<id>.logout-commands first
+        String mazesPath = "mazes." + timerId + ".logout-commands";
+        if (config.contains(mazesPath)) {
+            return config.getStringList(mazesPath);
+        }
+        if (normalized != null) {
+            String mazesNorm = "mazes." + normalized + ".logout-commands";
+            if (config.contains(mazesNorm)) {
+                return config.getStringList(mazesNorm);
+            }
+        }
+
+        // Fallback to timers.<id>.logout-commands
+        String timersPath = "timers." + timerId + ".logout-commands";
+        if (config.contains(timersPath)) {
+            return config.getStringList(timersPath);
+        }
+        if (normalized != null) {
+            String timersNorm = "timers." + normalized + ".logout-commands";
+            if (config.contains(timersNorm)) {
+                return config.getStringList(timersNorm);
+            }
+        }
+
+        return Collections.emptyList();
+    }
 }
