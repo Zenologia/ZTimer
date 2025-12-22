@@ -6,3 +6,6 @@ Players who disconnect during a run now get a pending teleport recorded to plugi
 Optional relog commands
 
 Per-timer relog-commands can be configured (executed as console on the player's next join). Placeholders supported: %player%, %player_uuid%.
+
+Changes in v1.2
+Adding to the logic of relog command - added logout commands 
