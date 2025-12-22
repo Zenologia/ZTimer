@@ -160,7 +160,22 @@ public class TimerManager {
             // Determine relog commands from config (optional)
             List<String> relogCommands = configManager.getRelogCommandsForTimer(active.getTimerId());
 
-            // Persist pending teleport (file-backed)
+            // Determine logout commands from config (optional) and run them immediately
+            List<String> logoutCommands = configManager.getLogoutCommandsForTimer(active.getTimerId());
+            if (logoutCommands != null && !logoutCommands.isEmpty()) {
+                try {
+                    // Run logout commands immediately on the main thread (player still available in event)
+                    runRelogCommands(player, logoutCommands);
+                } catch (Exception ex) {
+                    if (configManager.isDebugEnabled()) {
+                        plugin.getLogger().severe("Error running logout commands for " + player.getName() +
+                                " timer '" + active.getTimerId() + "': " + ex.getMessage());
+                        ex.printStackTrace();
+                    }
+                }
+            }
+
+            // Persist pending teleport (file-backed) with relog commands (unchanged)
             pendingTeleportManager.setPendingTeleport(player.getUniqueId(), active.getTimerId(), relogCommands);
 
             if (configManager.isDebugEnabled() && configManager.isDebugLogStartStop()) {
@@ -231,7 +246,7 @@ public class TimerManager {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
             } catch (Exception ex) {
                 if (configManager.isDebugEnabled()) {
-                    plugin.getLogger().severe("Error running relog command for " + player.getName() + ": " + ex.getMessage());
+                    plugin.getLogger().severe("Error running relog/logout command for " + player.getName() + ": " + ex.getMessage());
                     ex.printStackTrace();
                 }
             }
