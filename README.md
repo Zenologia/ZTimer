@@ -78,8 +78,6 @@ Messages in `config.yml` use variable tokens that the plugin replaces when sendi
 - `%time%` — formatted time for start/stop messages (format controlled by `formatting.time_pattern`)
 - `%selector%` — the selector string used in admin commands (e.g., `@a`)
 
-Make sure to document these tokens in your server documentation when customizing message templates.
-
 ---
 
 ## 🧾 PLACEHOLDERS (PlaceholderAPI)
@@ -145,7 +143,7 @@ Behavior summary for edge-cases:
 ---
 
 ## ⌨️ COMMANDS (quick)
-Admin commands (see full README or /help):
+Admin commands (see full README):
 - `/ztimer start <timerId> <selector>`
 - `/ztimer stop <timerId> <selector>`
 - `/ztimer reset <timerId> <selector>`
@@ -195,5 +193,3 @@ The PlaceholderAPI expansion implementation that defines above tokens is availab
 - Use MockBukkit / integration test server for behavior tests involving Bukkit events and scheduler.
 
 ---
-
-Thanks for using ZTimer — if you want the README changed in the repository, I can open a PR with this content (or adjust wording, examples, or add extra placeholder examples). If you'd like I can also scan other files for any extra tokens I might have missed.
