@@ -9,3 +9,6 @@ Per-timer relog-commands can be configured (executed as console on the player's 
 
 Changes in v1.2
 Adding to the logic of relog command - added logout commands 
+
+Changes in v1.3
+Added placeholder `%ztimer_active_global_<timerId>` to globally show if a timer is active - not just to the one running the timer 
