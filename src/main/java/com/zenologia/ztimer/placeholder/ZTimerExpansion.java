@@ -54,11 +54,20 @@ public class ZTimerExpansion extends PlaceholderExpansion {
 
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
+
+        // Only one global active placeholder: active_global_<timerId>
+        // This works even when Player is null.
+        if (params.startsWith("active_global_")) {
+            String timerIdPart = params.substring("active_global_".length());
+            return timerManager.isAnyActive(timerIdPart) ? "true" : "false";
+        }
+
+        // For all other placeholders we need a valid Player context.
         if (player == null) {
             return "";
         }
 
-        // active_<timerId>
+        // per-player active_<timerId>
         if (params.startsWith("active_")) {
             String timerIdPart = params.substring("active_".length());
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
@@ -114,7 +123,7 @@ public class ZTimerExpansion extends PlaceholderExpansion {
             String timerIdPart = remainder;
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
             if (normalized == null) {
-                return configManager.getTimeDefault();
+                return "";
             }
             Long elapsed = timerManager.getCurrentElapsedMillis(player, normalized);
             if (elapsed == null) {
@@ -125,101 +134,69 @@ public class ZTimerExpansion extends PlaceholderExpansion {
     }
 
     private String handleBest(Player player, String remainder) {
-        // best_<timerId>
-        // best_seconds_<timerId>
-        // best_millis_<timerId>
+        // best_<timerId>, best_seconds_<timerId>, best_millis_<timerId>
         if (remainder.startsWith("seconds_")) {
             String timerIdPart = remainder.substring("seconds_".length());
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
             if (normalized == null) {
                 return "";
             }
-            Long best = timerManager.getBestTimeMillis(player, normalized);
-            if (best == null) {
+            Long millis = timerManager.getBestTimeMillis(player, normalized);
+            if (millis == null) {
                 return "";
             }
-            return String.valueOf(best / 1000L);
+            return String.valueOf(millis / 1000L);
         } else if (remainder.startsWith("millis_")) {
             String timerIdPart = remainder.substring("millis_".length());
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
             if (normalized == null) {
                 return "";
             }
-            Long best = timerManager.getBestTimeMillis(player, normalized);
-            if (best == null) {
+            Long millis = timerManager.getBestTimeMillis(player, normalized);
+            if (millis == null) {
                 return "";
             }
-            return String.valueOf(best);
+            return String.valueOf(millis);
         } else {
             String timerIdPart = remainder;
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
             if (normalized == null) {
                 return configManager.getTimeDefault();
             }
-            Long best = timerManager.getBestTimeMillis(player, normalized);
-            if (best == null) {
-                return configManager.getTimeDefault();
-            }
-            return timerManager.formatMillisOrDefault(best);
+            Long millis = timerManager.getBestTimeMillis(player, normalized);
+            return timerManager.formatMillisOrDefault(millis);
         }
     }
 
     private String handleTop(String remainder) {
-        // Expected format now:
-        // top_<position>_<timerId>_name
-        // top_<position>_<timerId>_time
-        // top_<position>_<timerId>_seconds
-        // top_<position>_<timerId>_millis
-
-        int lastUnderscore = remainder.lastIndexOf('_');
-        if (lastUnderscore <= 0) {
+        // top_<position>_<timerId>_name or _time
+        String[] parts = remainder.split("_", 3);
+        if (parts.length < 3) {
             return "";
         }
-        String field = remainder.substring(lastUnderscore + 1);
-        String beforeField = remainder.substring(0, lastUnderscore);
-
-        int firstUnderscore = beforeField.indexOf('_');
-        if (firstUnderscore <= 0) {
-            return "";
-        }
-
-        String positionPart = beforeField.substring(0, firstUnderscore);
-        String timerIdPart = beforeField.substring(firstUnderscore + 1);
-
-        int position;
         try {
-            position = Integer.parseInt(positionPart);
+            int position = Integer.parseInt(parts[0]);
+            String timerIdPart = parts[1];
+            String suffix = parts[2]; // name or time
+            String normalized = TimerIdNormalizer.normalize(timerIdPart);
+            if (normalized == null) {
+                return "";
+            }
+            List<LeaderboardEntry> leaderboard = timerManager.getLeaderboard(normalized);
+            int idx = position - 1;
+            if (idx < 0 || idx >= leaderboard.size()) {
+                return "";
+            }
+            LeaderboardEntry entry = leaderboard.get(idx);
+            if (suffix.equals("name")) {
+                return entry.getPlayerName();
+            } else if (suffix.equals("time")) {
+                return timerManager.formatMillisOrDefault(entry.getBestMillis());
+            } else {
+                return "";
+            }
         } catch (NumberFormatException ex) {
             return "";
-        }
-
-        if (position <= 0) {
-            return "";
-        }
-
-        String normalized = TimerIdNormalizer.normalize(timerIdPart);
-        if (normalized == null) {
-            return "";
-        }
-
-        java.util.List<LeaderboardEntry> leaderboard = timerManager.getLeaderboard(normalized);
-        if (position > leaderboard.size()) {
-            return "";
-        }
-
-        LeaderboardEntry entry = leaderboard.get(position - 1);
-
-        switch (field.toLowerCase()) {
-            case "name":
-                return entry.getPlayerName();
-            case "time":
-                return timerManager.formatMillisOrDefault(entry.getBestMillis());
-            case "seconds":
-                return String.valueOf(entry.getBestMillis() / 1000L);
-            case "millis":
-                return String.valueOf(entry.getBestMillis());
-            default:
-                return "";
         }
     }
 }
