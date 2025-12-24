@@ -1,6 +1,6 @@
 name: ZTimer
 main: com.zenologia.ztimer.ZTimerPlugin
-version: 1.2
+version: 1.3
 api-version: '1.21'
 author: Zenologia
 depend:
