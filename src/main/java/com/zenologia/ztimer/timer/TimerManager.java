@@ -274,6 +274,18 @@ public class TimerManager {
         return active != null && active.getTimerId().equals(timerId);
     }
 
+    /**
+     * New: check whether any player currently has an active timer with the given timerId.
+     * Accepts rawTimerId (it will be normalized here).
+     */
+    public boolean isAnyActive(String rawTimerId) {
+        String timerId = TimerIdNormalizer.normalize(rawTimerId);
+        if (timerId == null) {
+            return false;
+        }
+        return activeTimers.values().stream().anyMatch(a -> a.getTimerId().equals(timerId));
+    }
+
     public Long getBestTimeMillis(Player player, String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
         if (timerId == null) {
