@@ -12,3 +12,6 @@ Adding to the logic of relog command - added logout commands
 
 Changes in v1.3
 Added placeholder `%ztimer_active_global_<timerId>` to globally show if a timer is active - not just to the one running the timer 
+
+Changes in v1.3.1
+Fixed leaderboards not parsing correctly due to underscores in timer IDs
