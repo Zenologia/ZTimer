@@ -170,14 +170,26 @@ public class ZTimerExpansion extends PlaceholderExpansion {
 
     private String handleTop(String remainder) {
         // top_<position>_<timerId>_name or _time
-        String[] parts = remainder.split("_", 3);
-        if (parts.length < 3) {
+        // We need to support timer IDs containing underscores. Parse as:
+        // tokens[0] = position, tokens[last] = suffix, tokens[1..last-1] joined with '_' = timerId
+        String[] tokens = remainder.split("_");
+        if (tokens.length < 3) {
             return "";
         }
         try {
-            int position = Integer.parseInt(parts[0]);
-            String timerIdPart = parts[1];
-            String suffix = parts[2]; // name or time
+            int position = Integer.parseInt(tokens[0]);
+            String suffix = tokens[tokens.length - 1]; // name or time
+
+            // Reconstruct timerId from tokens[1]..tokens[tokens.length-2]
+            StringBuilder timerIdBuilder = new StringBuilder();
+            for (int i = 1; i < tokens.length - 1; i++) {
+                if (i > 1) {
+                    timerIdBuilder.append('_');
+                }
+                timerIdBuilder.append(tokens[i]);
+            }
+            String timerIdPart = timerIdBuilder.toString();
+
             String normalized = TimerIdNormalizer.normalize(timerIdPart);
             if (normalized == null) {
                 return "";
