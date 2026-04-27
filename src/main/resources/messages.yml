@@ -1,0 +1,29 @@
+prefix: "&7[&bZTimer&7] "
+
+shared:
+  all_players: "all players"
+
+errors:
+  no_permission: "You do not have permission."
+  timer_not_running: "Timer &e%timer%&7 is not running for &b%player%&7."
+  invalid_timer_id: "Timer ID &e%timer%&7 is not configured under timers."
+  invalid_player_selector: "No valid players found for selector &e%selector%&7."
+  only_players_self_cancel: "Only players may self-cancel."
+
+info:
+  start: "Started timer &e%timer%&7 for &b%player%&7."
+  start_replaced: "Started timer &e%timer%&7 for &b%player%&7. Active timer &e%previous_timer%&7 was canceled."
+  timer_already_running: "Timer &e%timer%&7 is already running for &b%player%&7."
+  stop: "Stopped timer &e%timer%&7 for &b%player%&7. Time: &a%time%&7."
+  reset: "Reset timer &e%timer%&7 for &b%player%&7."
+  cancel: "Canceled timer &e%timer%&7 for &b%player%&7."
+  reload: "ZTimer configuration reloaded."
+  reset_confirm: "&7This will reset all stored times for timer &e%timer%&7 for &b%selector%&7. Type &c/ztimer reset %timer% confirm&7 to confirm."
+  reset_success: "Reset timer &e%timer%&7 for &b%selector%&7."
+
+usage:
+  base: "/ztimer <start|stop|reset|cancel|reload> ..."
+  start: "Usage: /ztimer start <timerId> <playerSelector>"
+  stop: "Usage: /ztimer stop <timerId> <playerSelector>"
+  reset: "Usage: /ztimer reset <timerId> [playerSelector|confirm]"
+  cancel: "Usage: /ztimer cancel <timerId> [playerSelector]"

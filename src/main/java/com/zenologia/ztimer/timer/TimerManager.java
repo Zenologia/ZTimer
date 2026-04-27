@@ -47,19 +47,32 @@ public class TimerManager {
         return uuid.toString() + "|" + timerId;
     }
 
-    public void startTimer(Player player, String rawTimerId) {
+    public TimerStartResult startTimer(Player player, String rawTimerId) {
         String timerId = TimerIdNormalizer.normalize(rawTimerId);
         if (timerId == null) {
-            return;
+            return null;
         }
 
-        // Any start cancels existing active timer (without recording)
-        activeTimers.remove(player.getUniqueId());
+        ActiveTimer active = activeTimers.get(player.getUniqueId());
+        if (active != null) {
+            if (active.getTimerId().equals(timerId)) {
+                return TimerStartResult.alreadyRunning(timerId);
+            }
+
+            activeTimers.put(player.getUniqueId(), new ActiveTimer(timerId, System.currentTimeMillis()));
+
+            if (configManager.isDebugEnabled() && configManager.isDebugLogStartStop()) {
+                plugin.getLogger().info("Replaced timer '" + active.getTimerId() + "' with '" + timerId + "' for " + player.getName());
+            }
+            return TimerStartResult.replaced(timerId, active.getTimerId());
+        }
+
         activeTimers.put(player.getUniqueId(), new ActiveTimer(timerId, System.currentTimeMillis()));
 
         if (configManager.isDebugEnabled() && configManager.isDebugLogStartStop()) {
             plugin.getLogger().info("Started timer '" + timerId + "' for " + player.getName());
         }
+        return TimerStartResult.started(timerId);
     }
 
     public Long stopTimer(Player player, String rawTimerId) {

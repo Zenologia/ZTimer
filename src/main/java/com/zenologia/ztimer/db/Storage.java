@@ -1,12 +1,14 @@
 package com.zenologia.ztimer.db;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
 import com.zenologia.ztimer.ZTimerPlugin;
 import com.zenologia.ztimer.config.ConfigManager;
-
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 public abstract class Storage {
 
@@ -34,7 +36,7 @@ public abstract class Storage {
 
     public abstract void updatePlayerName(UUID playerUuid, String playerName) throws Exception;
 
-protected void createSchema(Connection connection) throws SQLException {
+    protected void createSchema(Connection connection) throws SQLException {
         try (Statement st = connection.createStatement()) {
             st.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ztimer_best_times (" +
@@ -53,13 +55,16 @@ protected void createSchema(Connection connection) throws SQLException {
         }
     }
 
-
     public static Storage create(ZTimerPlugin plugin, ConfigManager configManager) {
-        String type = configManager.getRawConfig().getString("storage.type", "sqlite").toLowerCase();
+        String configuredType = configManager.getRawConfig().getString("storage.type");
+        String type = configuredType == null ? "sqlite" : configuredType.toLowerCase(Locale.ROOT);
+
         switch (type) {
             case "mysql":
             case "mariadb":
                 return new MysqlStorage(plugin, configManager);
+            case "yaml":
+                return new YamlStorage(plugin, configManager);
             case "sqlite":
             default:
                 return new SqliteStorage(plugin, configManager);

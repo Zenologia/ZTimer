@@ -1,43 +1,46 @@
 # 🌟 ZTimer
 *Developed by Zenologia*
 
-A precision-tuned, database-backed timer system built for competitive Minecraft gameplay — whether for parkour, dungeons, questlines, or race events.  
-Designed for performance, flexibility, and admin control, it automatically tracks active runs, best times, and per-timer leaderboards with full PlaceholderAPI support.
+A precision-tuned, storage-backed timer system built for competitive Minecraft gameplay — whether for parkour, dungeons, questlines, or race events.  
+Designed for performance, flexibility, and admin control, it tracks active runs, best times, and per-timer leaderboards with full PlaceholderAPI support.
 
 ## What it does (and doesn’t) do
 
-- ✅ Tracks per-player active timers (start/stop/cancel/reset).
+- ✅ Tracks per-player active timers (`start`, `stop`, `cancel`, `reset`).
 - ✅ Records millisecond-accurate best times and maintains per-timer leaderboards with caching.
-- ✅ Runs async DB writes (HikariCP for MySQL; SQLite supported).
-- ✅ Provides PlaceholderAPI expansion with live placeholders (per-player and a server-global active check).
-- ✅ Supports configurable exit/fallback teleports, relog- and logout-commands.
-- ❌ Not a queue manager; if you use a queue plugin, configure it to handle backend kick/teleport messages appropriately.
-- ❌ Does not require Floodgate/Geyser integration — placeholders and timing are independent of proxy auth.
+- ✅ Supports YAML, SQLite, and MySQL/MariaDB storage.
+- ✅ Loads admin and player-facing text from a separate `messages.yml`.
+- ✅ Provides PlaceholderAPI expansion with live placeholders, including a server-global active check.
+- ✅ Supports configurable exit/fallback teleports plus relog- and logout-commands.
+- ❌ Not a queue manager; if you use a queue plugin, configure it to handle backend kick or teleport messages appropriately.
+- ❌ Does not require Floodgate or Geyser integration — placeholders and timing are independent of proxy auth.
 
 ---
 
 ## ⚙️ FEATURES
-- ⏱️ Unlimited timer IDs (auto-sanitized)
-- 🔁 Auto-stop existing timers when a new one starts
-- 🧮 Millisecond-accurate best time tracking (displayed in configured format)
+- ⏱️ Per-player active timers with millisecond tracking
+- 🔁 Clear start behavior when the same timer is already active or when another timer gets replaced
+- 🧪 Strict admin timer validation against `timers` entries in `config.yml`
 - 🏆 Per-timer leaderboards with caching
-- ⚡ Fully async database operations (HikariCP for MySQL; SQLite supported)
-- 🗺️ Configurable exit & fallback locations
-- 💬 Live-updating placeholders (PlaceholderAPI)
+- ⚡ Async storage updates for timer saves, resets, and name refreshes
+- 🗺️ Configurable exit and fallback locations
+- 💬 Separate `messages.yml` for all player and admin-facing messages
+- 💡 PlaceholderAPI expansion with active, current, best, and leaderboard placeholders
 - 🔒 Confirmation prompts for global resets
-- 🔄 Auto-update player names and times on next join
-- 💡 Tab completion for timers and selectors
-- 🧰 Admin command suite for complete timer management
-- 🚪 logout-commands — run configured console commands immediately when a player logs out with an active timer
-- 🔁 relog-commands — run configured console commands when the player rejoins (persisted to pending_teleports.yml)
+- 🚪 logout-commands that run immediately when a player logs out mid-run
+- 🔁 relog-commands that run when a player rejoins after logging out mid-run
+- 🧰 Admin command suite with tab completion for timers and selectors
 
 ---
 
 ## Requirements
 - Paper 1.21.10+
 - Java 17+
-- PlaceholderAPI (required for placeholders)
-- SQLite (included) or MySQL (optional; configure in `config.yml`)
+- PlaceholderAPI
+- One storage backend:
+  - YAML (default for new installs)
+  - SQLite
+  - MySQL or MariaDB
 
 ---
 
@@ -49,29 +52,44 @@ Designed for performance, flexibility, and admin control, it automatically track
 ## Installation
 
 1. Drop `ZTimer.jar` into your server's `plugins/` folder.
-2. Start the server once — config and database files will auto-generate.
+2. Start the server once so the plugin can generate its files.
 3. Edit `config.yml` to define:
-   - Timer exit points
-   - Leaderboard sizes
-   - `logout-commands` / `relog-commands`
-   - Fallback spawn
-   - Storage type (SQLite/MySQL)
-4. Reload or restart:
-```
+   - valid timer IDs under `timers`
+   - exit points
+   - leaderboard sizes
+   - `logout-commands` and `relog-commands`
+   - fallback spawn
+   - storage type
+4. Edit `messages.yml` if you want to customize text output.
+5. Reload or restart:
+```text
 /ztimer reload
 ```
-Note: If you change storage types, restart the whole server (changing storage at runtime is unsupported).
+
+Important notes:
+- If you change `storage.type`, restart the whole server. Runtime storage switching is not supported.
+- On upgrade, if `messages.yml` does not exist yet, ZTimer will create it and copy any legacy `config.yml` message values into it on first startup.
+- Fresh installs use YAML storage by default. Existing installs keep whatever `storage.type` is already set in their live `config.yml`.
 
 ---
 
 ## Configuration (`config.yml`)
 
-Example (representative excerpt):
+Example:
 ```yaml
 storage:
-  type: sqlite
+  type: yaml
+  yaml:
+    file: "ztimer-data.yml"
   sqlite:
     file: "ztimer.db"
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "ztimer"
+    user: "ztimer"
+    password: "password"
+    useSSL: false
 
 leaderboards:
   global_top_n_default: 5
@@ -108,32 +126,56 @@ formatting:
   time_default: "-"
   time_pattern: "mm:ss"
 
-messages:
-  prefix: "&7[&bZTimer&7] "
-  errors:
-    no_permission: "You do not have permission."
-    timer_not_running: "Timer &e%timer%&7 is not running for &b%player%&7."
-    invalid_timer_id: "Timer ID &e%timer%&7 is invalid."
-    invalid_player_selector: "No valid players found for selector &e%selector%&7."
-  info:
-    start: "Started timer &e%timer%&7 for &b%player%&7."
-    stop: "Stopped timer &e%timer%&7 for &b%player%&7. Time: &a%time%&7."
-    reset: "Reset timer &e%timer%&7 for &b%player%&7."
-    cancel: "Canceled timer &e%timer%&7 for &b%player%&7."
-    reload: "ZTimer configuration reloaded."
-    reset_confirm: "&7This will reset all stored times for timer &e%timer%&7 for &e%selector%&7. Type &c/ztimer reset %timer% confirm&7 to confirm."
-    reset_success: "&7Reset timer &e%timer%&7 for &e%selector%&7."
-
 debug:
   enabled: false
   log_start_stop: true
   log_db_errors: true
 ```
 
-### Tips
-- Timer IDs are normalized by the plugin (auto-sanitized). Use the IDs you define in `config.yml` (e.g., `maze1`) or simple alphanumeric variants.
-- Keep logout/relog commands lightweight (logout-commands run immediately on PlayerQuitEvent).
-- Use `%player%` and `%player_uuid%` inside relog/logout commands — the plugin substitutes them before dispatching as the console.
+### Notes
+- Timer IDs are defined by the keys under `timers`.
+- Admin commands reject timer IDs that are not listed under `timers`, even if the same ID appears under `mazes` or `leaderboards.per_timer`.
+- `mazes.<timerId>.exit_location` controls where players are teleported on cancel or relog handling.
+- `fallback_exit_location` is only used when a timer-specific exit location is missing.
+
+---
+
+## Configuration (`messages.yml`)
+
+All player and admin-facing messages now live in `messages.yml`.
+
+Example:
+```yaml
+prefix: "&7[&bZTimer&7] "
+
+shared:
+  all_players: "all players"
+
+errors:
+  no_permission: "You do not have permission."
+  timer_not_running: "Timer &e%timer%&7 is not running for &b%player%&7."
+  invalid_timer_id: "Timer ID &e%timer%&7 is not configured under timers."
+  invalid_player_selector: "No valid players found for selector &e%selector%&7."
+  only_players_self_cancel: "Only players may self-cancel."
+
+info:
+  start: "Started timer &e%timer%&7 for &b%player%&7."
+  start_replaced: "Started timer &e%timer%&7 for &b%player%&7. Active timer &e%previous_timer%&7 was canceled."
+  timer_already_running: "Timer &e%timer%&7 is already running for &b%player%&7."
+  stop: "Stopped timer &e%timer%&7 for &b%player%&7. Time: &a%time%&7."
+  reset: "Reset timer &e%timer%&7 for &b%player%&7."
+  cancel: "Canceled timer &e%timer%&7 for &b%player%&7."
+  reload: "ZTimer configuration reloaded."
+  reset_confirm: "&7This will reset all stored times for timer &e%timer%&7 for &b%selector%&7. Type &c/ztimer reset %timer% confirm&7 to confirm."
+  reset_success: "Reset timer &e%timer%&7 for &b%selector%&7."
+
+usage:
+  base: "/ztimer <start|stop|reset|cancel|reload> ..."
+  start: "Usage: /ztimer start <timerId> <playerSelector>"
+  stop: "Usage: /ztimer stop <timerId> <playerSelector>"
+  reset: "Usage: /ztimer reset <timerId> [playerSelector|confirm]"
+  cancel: "Usage: /ztimer cancel <timerId> [playerSelector]"
+```
 
 ---
 
@@ -141,13 +183,16 @@ debug:
 
 | Command | Description | Permission |
 |---|---:|---|
-| `/ztimer start <timerId> <playerSelector>` | Start a timer for a target player(s) | `ztimer.admin` |
-| `/ztimer stop <timerId> <playerSelector>` | Stop a timer for a target player(s) | `ztimer.admin` |
-| `/ztimer reset <timerId> <playerSelector>` | Reset stored best times for selector (requires confirm) | `ztimer.admin` |
-| `/ztimer cancel <timerId> <playerSelector>` | Cancel an active timer and teleport to exit | `ztimer.admin` |
-| `/ztimer reload` | Reload the plugin configuration | `ztimer.admin` |
+| `/ztimer start <timerId> <playerSelector>` | Start a timer for target player(s) | `ztimer.admin` |
+| `/ztimer stop <timerId> <playerSelector>` | Stop a timer for target player(s) | `ztimer.admin` |
+| `/ztimer reset <timerId>` | Show the global reset confirmation message | `ztimer.admin` |
+| `/ztimer reset <timerId> confirm` | Reset all stored times for that timer | `ztimer.admin` |
+| `/ztimer reset <timerId> <playerSelector>` | Reset stored best times for target player(s) | `ztimer.admin` |
+| `/ztimer cancel <timerId>` | Cancel your own active timer | `ztimer.cancel.self` |
+| `/ztimer cancel <timerId> <playerSelector>` | Cancel active timers for target player(s) | `ztimer.admin` |
+| `/ztimer reload` | Reload `config.yml` and `messages.yml` | `ztimer.admin` |
 
-Tab-completion is included for timers and selectors.
+Tab-completion is included for subcommands, timer IDs, selectors, and online player names.
 
 ---
 
@@ -155,113 +200,116 @@ Tab-completion is included for timers and selectors.
 
 | Node | Who should get it | Effect |
 |---|---:|---|
-| `ztimer.admin` | Admins/staff | Full administrative access to `/ztimer` commands |
+| `ztimer.admin` | Admins or staff | Full administrative access to `/ztimer` commands |
 | `ztimer.cancel.self` | Players (default true) | Allows a player to cancel their own timer |
 
 ---
 
 ## Message placeholders (in-plugin messages)
-Messages in `config.yml` use variable tokens that the plugin replaces when sending messages:
+
+Messages in `messages.yml` can use the following replacement tokens:
 - `%timer%` — timer ID used in the command
+- `%previous_timer%` — the timer that was replaced when a different timer starts
 - `%player%` — target player name
-- `%time%` — formatted time for start/stop messages (format controlled by `formatting.time_pattern`)
-- `%selector%` — the selector string used in admin commands (e.g., `@a`)
+- `%time%` — formatted elapsed time
+- `%selector%` — selector text used in admin messages
 
 ---
 
 ## Placeholders (PlaceholderAPI)
+
 ZTimer registers a PlaceholderAPI expansion under the identifier `ztimer`. Use placeholders as:
 
-```
+```text
 %ztimer_<placeholder>%
 ```
 
-All placeholders are implemented in the PlaceholderAPI expansion (see source: ZTimerExpansion.java).
-
 Important notes on behavior:
-- Many placeholders require a valid Player context — they return an empty string when `Player` is null. Some global placeholders work without a Player (see below).
-- Timer IDs are normalized by the plugin. Invalid/unknown timer IDs may return empty strings or defaults.
-- Leaderboard (`top_...`) positions are 1-based (1 = top entry).
-- Formatted `current` and `best` fall back to `formatting.time_default` when no value exists.
+- Many placeholders require a valid Player context and return an empty string when `Player` is null.
+- `%ztimer_active_global_<timerId>%` works without a Player context.
+- Leaderboard positions are 1-based.
+- Formatted `current` and `best` placeholders fall back to `formatting.time_default` when no value exists.
+- For consistency, use timer IDs that are defined under `timers` in `config.yml`.
 
 Complete list of placeholders
 
 1) Active check
-- `%ztimer_active_<timerId>%`  
-  - Per-player check. Returns `true` if the player viewing the placeholder currently has an active timer for `<timerId>`, otherwise `false`.  
-  - Example: `%ztimer_active_maze1%` → `true` or `false`  
-  - Requires a Player context. If the timerId is invalid the expansion returns `false`.
-
-- `%ztimer_active_global_<timerId>%`  
-  - Global server-level check (new). Returns `true` if any player on the server currently has an active timer for `<timerId>`, otherwise `false`.  
-  - Example: `%ztimer_active_global_maze1%` → `true` or `false`  
-  - Does NOT require a Player context — useful for server-wide displays or scoreboard lines.
+- `%ztimer_active_<timerId>%`
+  - Per-player check. Returns `true` if the player currently has an active timer for `<timerId>`, otherwise `false`.
+- `%ztimer_active_global_<timerId>%`
+  - Global check. Returns `true` if any player on the server currently has an active timer for `<timerId>`, otherwise `false`.
 
 2) Current timer
-- `%ztimer_current_<timerId>%`  
-  - Returns the current elapsed time for the player's active run on `<timerId>` formatted according to `formatting.time_pattern`, or `formatting.time_default` if no active timer.  
-  - Example: `%ztimer_current_maze1%` → `01:23` or `-`
+- `%ztimer_current_<timerId>%`
+  - Returns the current elapsed time formatted with `formatting.time_pattern`, or `formatting.time_default` if no active timer exists.
+- `%ztimer_current_seconds_<timerId>%`
+  - Returns whole seconds of the current elapsed time, or an empty string when unavailable.
+- `%ztimer_current_millis_<timerId>%`
+  - Returns elapsed milliseconds, or an empty string when unavailable.
 
-- `%ztimer_current_seconds_<timerId>%`  
-  - Returns whole seconds (integer) of the current elapsed time, or empty string when unavailable.  
-  - Example: `%ztimer_current_seconds_maze1%` → `83`
-
-- `%ztimer_current_millis_<timerId>%`  
-  - Returns elapsed milliseconds (integer), or empty string when unavailable.  
-  - Example: `%ztimer_current_millis_maze1%` → `83000`
-
-3) Best time (player's personal best for that timer)
-- `%ztimer_best_<timerId>%`  
-  - Returns the player's best time formatted according to `formatting.time_pattern`, or `formatting.time_default` if no best exists.  
-  - Example: `%ztimer_best_maze1%` → `00:59` or `-`
-
-- `%ztimer_best_seconds_<timerId>%`  
-  - Returns whole seconds for the best time, or empty string when unavailable.  
-  - Example: `%ztimer_best_seconds_maze1%` → `59`
-
-- `%ztimer_best_millis_<timerId>%`  
-  - Returns milliseconds for the best time, or empty string when unavailable.  
-  - Example: `%ztimer_best_millis_maze1%` → `59000`
+3) Best time
+- `%ztimer_best_<timerId>%`
+  - Returns the player's best time formatted with `formatting.time_pattern`, or `formatting.time_default` if none exists.
+- `%ztimer_best_seconds_<timerId>%`
+  - Returns whole seconds of the best time, or an empty string when unavailable.
+- `%ztimer_best_millis_<timerId>%`
+  - Returns the best time in milliseconds, or an empty string when unavailable.
 
 4) Leaderboard / top entries
-- Pattern:
-  - `%ztimer_top_<position>_<timerId>_name%` — player's name at that position
-  - `%ztimer_top_<position>_<timerId>_time%` — formatted time (using `time_pattern`)
-  - Example: `%ztimer_top_1_maze1_name%` → `SomePlayer`  
-  - Example: `%ztimer_top_1_maze1_time%` → `00:45`
+- `%ztimer_top_<position>_<timerId>_name%`
+  - Returns the player name at that leaderboard position.
+- `%ztimer_top_<position>_<timerId>_time%`
+  - Returns the formatted time at that leaderboard position.
+
+Examples:
+- `%ztimer_active_global_maze1%`
+- `%ztimer_current_maze1%`
+- `%ztimer_best_maze1%`
+- `%ztimer_top_1_maze1_name%`
+- `%ztimer_top_1_maze1_time%`
 
 ---
 
 ## Common scenarios
 
 **Show a server-wide "maze1 active" indicator in a scoreboard:**  
-Use the global placeholder in a scoreboard line:
-```
+```text
 %ztimer_active_global_maze1%
 ```
-This returns `true` if any player is currently running `maze1`.
 
-**Show a player's personal current time on a HUD or sidebar:**  
-```
+**Show a player's current run time on a sidebar or HUD:**  
+```text
 %ztimer_current_maze1%
 ```
-Will format and display their current elapsed time (or `-` if not running).
+
+**Verify leaderboard first place for a timer:**  
+```text
+%ztimer_top_1_maze1_name%
+%ztimer_top_1_maze1_time%
+```
 
 ---
 
 ## Troubleshooting
 
-- Placeholder expansion returns empty string: many placeholders require a Player context. Use `%ztimer_active_global_<timerId>%` for server-global checks.
-- Invalid timer IDs: Timer IDs are normalized; use IDs defined in `config.yml` or simple alphanumeric variants.
-- DB errors: Enable `debug.log_db_errors` in `config.yml` to surface DB exceptions in the server log.
-- Logout/relog commands not running: Ensure `logout-commands` are configured for the timer and that commands are valid console commands. Relog commands are persisted and run when the player rejoins.
+- Invalid timer ID on admin commands: make sure the timer exists under `timers` in `config.yml`.
+- Placeholder expansion returns an empty string: many placeholders require a Player context.
+- Messages are not updating: edit `messages.yml`, then run `/ztimer reload`.
+- Storage type changes are not taking effect: changing `storage.type` requires a full server restart.
+- Logout or relog commands are not running: make sure they are configured under `timers.<id>` and are valid console commands.
+
+---
+
+## Testing
+
+For a full admin-friendly verification pass, see [TESTING.md](./TESTING.md).
 
 ---
 
 ## Uninstall
 
 1. Remove the JAR from `plugins/`.
-2. (Optional) Delete `plugins/ZTimer/` if you don’t need the data/config anymore.
+2. Delete `plugins/ZTimer/` if you no longer need the configs or data.
 3. Restart the server.
 
 ---
