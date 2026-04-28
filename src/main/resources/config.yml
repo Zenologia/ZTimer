@@ -1,5 +1,7 @@
-# Existing installs keep their current config.yml.
-# This default file only applies to new installs.
+# Existing installs are synchronized to this layout on upgrade.
+# ZTimer creates a timestamped backup before rewriting a live config.yml.
+config_version: 2
+
 storage:
   type: yaml
   yaml:

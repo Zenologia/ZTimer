@@ -68,7 +68,8 @@ Designed for performance, flexibility, and admin control, it tracks active runs,
 
 Important notes:
 - If you change `storage.type`, restart the whole server. Runtime storage switching is not supported.
-- On upgrade, if `messages.yml` does not exist yet, ZTimer will create it and copy any legacy `config.yml` message values into it on first startup.
+- On upgrade to `v1.4.1` or newer, ZTimer automatically synchronizes `config.yml` to the current layout, writes `config_version: 2`, removes legacy `messages` keys, and creates timestamped backups before rewriting a live `config.yml` or existing `messages.yml`.
+- On upgrade to `v1.4.1` or newer, `messages.yml` is synchronized from bundled defaults. Existing `messages.yml` values win, and legacy `config.yml` message values only fill any missing keys on first sync.
 - Fresh installs use YAML storage by default. Existing installs keep whatever `storage.type` is already set in their live `config.yml`.
 
 ---
@@ -77,6 +78,8 @@ Important notes:
 
 Example:
 ```yaml
+config_version: 2
+
 storage:
   type: yaml
   yaml:
@@ -133,9 +136,11 @@ debug:
 ```
 
 ### Notes
+- `config_version` is managed by the plugin and is used for one-time upgrade syncs.
 - Timer IDs are defined by the keys under `timers`.
 - Admin commands reject timer IDs that are not listed under `timers`, even if the same ID appears under `mazes` or `leaderboards.per_timer`.
 - `mazes.<timerId>.exit_location` controls where players are teleported on cancel or relog handling.
+- Legacy `mazes.<timerId>.relog-commands` and `mazes.<timerId>.logout-commands` are migrated into `timers.<timerId>` on upgrade.
 - `fallback_exit_location` is only used when a timer-specific exit location is missing.
 
 ---

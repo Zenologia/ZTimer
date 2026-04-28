@@ -1,7 +1,7 @@
 # 🧪 ZTimer Testing Guide
 *Developed by Zenologia*
 
-This guide is written for server admins who want to verify ZTimer 1.4 end to end without reading the source code.
+This guide is written for server admins who want to verify ZTimer 1.4.1 end to end without reading the source code.
 
 ## Before you start
 
@@ -32,6 +32,7 @@ Expected result:
 - `config.yml` is created.
 - `messages.yml` is created.
 - `pending_teleports.yml` is created.
+- `config.yml` includes `config_version: 2`.
 - Because new installs default to YAML, `storage.type` is `yaml` in `config.yml`.
 - `ztimer-data.yml` is created for YAML storage.
 
@@ -41,10 +42,22 @@ Expected result:
 3. Start the server.
 
 Expected result:
+- A timestamped `config.yml.bak-YYYYMMdd-HHmmss` backup is created before the live config is rewritten.
 - The existing `storage.type` is left alone.
 - The plugin does not switch the live config to YAML by itself.
+- `config.yml` is rewritten to the current layout and now includes `config_version: 2`.
+- The legacy top-level `messages` section is removed from `config.yml`.
 - A new `messages.yml` is created.
 - Legacy `config.yml` message values are copied into `messages.yml` on first startup.
+
+### Repeat startup idempotence check
+1. Leave the migrated files alone.
+2. Start the server again.
+
+Expected result:
+- No new `config.yml.bak-*` file is created.
+- No new `messages.yml.bak-*` file is created.
+- The plugin leaves the already-synced files alone.
 
 ---
 

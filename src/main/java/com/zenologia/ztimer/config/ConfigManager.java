@@ -1,7 +1,6 @@
 package com.zenologia.ztimer.config;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,6 +69,7 @@ public class ConfigManager {
     }
 
     public void reload() {
+        ConfigSynchronizer.synchronize(plugin);
         plugin.reloadConfig();
         this.config = plugin.getConfig();
 
@@ -148,13 +148,9 @@ public class ConfigManager {
     }
 
     private void loadMessages() {
-        boolean createdMessagesFile = ensureMessagesFile();
-        this.messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
-
-        if (createdMessagesFile) {
-            migrateLegacyMessages();
-            this.messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
-        }
+        this.messagesConfig = messagesFile.exists()
+                ? YamlConfiguration.loadConfiguration(messagesFile)
+                : new YamlConfiguration();
 
         this.prefix = color(message("prefix", "&7[&bZTimer&7] "));
         this.labelAllPlayers = color(message("shared.all_players", "all players"));
@@ -188,62 +184,6 @@ public class ConfigManager {
         this.msgUsageStop = color(message("usage.stop", "Usage: /ztimer stop <timerId> <playerSelector>"));
         this.msgUsageReset = color(message("usage.reset", "Usage: /ztimer reset <timerId> [playerSelector|confirm]"));
         this.msgUsageCancel = color(message("usage.cancel", "Usage: /ztimer cancel <timerId> [playerSelector]"));
-    }
-
-    private boolean ensureMessagesFile() {
-        if (messagesFile.exists()) {
-            return false;
-        }
-
-        File parent = messagesFile.getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-
-        if (plugin.getResource("messages.yml") != null) {
-            plugin.saveResource("messages.yml", false);
-        }
-
-        if (messagesFile.exists()) {
-            return true;
-        }
-
-        YamlConfiguration emptyMessages = new YamlConfiguration();
-        try {
-            emptyMessages.save(messagesFile);
-        } catch (IOException ex) {
-            plugin.getLogger().severe("Failed to create messages.yml: " + ex.getMessage());
-        }
-        return true;
-    }
-
-    private void migrateLegacyMessages() {
-        ConfigurationSection legacyMessages = config.getConfigurationSection("messages");
-        if (legacyMessages == null) {
-            return;
-        }
-
-        copySection(legacyMessages, messagesConfig);
-        try {
-            messagesConfig.save(messagesFile);
-        } catch (IOException ex) {
-            plugin.getLogger().severe("Failed to migrate legacy messages into messages.yml: " + ex.getMessage());
-        }
-    }
-
-    private void copySection(ConfigurationSection source, ConfigurationSection target) {
-        for (String key : source.getKeys(false)) {
-            Object value = source.get(key);
-            if (value instanceof ConfigurationSection) {
-                ConfigurationSection targetChild = target.getConfigurationSection(key);
-                if (targetChild == null) {
-                    targetChild = target.createSection(key);
-                }
-                copySection((ConfigurationSection) value, targetChild);
-                continue;
-            }
-            target.set(key, value);
-        }
     }
 
     private String message(String path, String defaultValue) {

@@ -37,3 +37,9 @@ Added YAML storage support and made it the default for fresh installs without ch
 Documentation refresh
 
 README updated to match the code, and an admin-friendly TESTING.md was added for full verification.
+
+Changes in v1.4.1
+
+Automatic config migration
+
+Existing config.yml files are now synchronized to the current layout on startup and reload, with timestamped backups created before any live rewrite. Legacy message keys are removed from config.yml, legacy maze relog/logout command paths are moved under timers, and existing storage backends are preserved.
